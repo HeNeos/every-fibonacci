@@ -1,0 +1,13 @@
+[package]
+name = "fibonacci_generator"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+wasm-bindgen = "0.2"
+once_cell = "1.19"
+js-sys = "0.3"

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Every Fibonacci Number</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <h1>(Almost) Every Fibonacci Number</h1>
+    <p>Scroll through the Fibonacci sequence. (Last 16 digits shown)</p>
+    <div class="search-container">
+      <input type="text" id="jumpToInput" placeholder="Jump to index (e.g., 1000)..." />
+      <button id="jumpToBtn">Go</button>
+    </div>
+  </header>
+  <div id="current-info">
+    <span id="currentInfo">Fibonacci #0: ...</span>
+  </div>
+  <div id="viewport">
+    <div id="scrollableDiv">
+      <div id="scrollHeight"></div>
+      <div id="fibonacci-container"></div>
+    </div>
+  </div>
+  <footer>
+    <p>
+      Powered by WebAssembly + Rust |
+      <a href="https://github.com/HeNeos/every-fibonacci" target="_blank">GitHub</a>
+    </p>
+  </footer>
+  <script type="module">
+    import init, {
+      init_pair,
+      next_pair,
+      prev_pair,
+      get_current_index,
+    } from "./pkg/fibonacci_generator.js";
+
+    async function run() {
+      try {
+        await init();
+
+        const SCROLL_HEIGHT = 1000000;
+        const MAX_INDEX = 2n ** 64n - 1n;
+        const ITEM_HEIGHT = 30;
+        const calculateVisibleItems = () =>
+          Math.ceil(window.innerHeight / ITEM_HEIGHT) + 4;
+        let VISIBLE_ITEMS = calculateVisibleItems();
+        const PLACEHOLDER_TEXT = "...";
+        const DIGIT_COUNT = 16;
+        const MODULO_BIGINT = 10n ** 16n;
+        const SPACEBAR_SCROLL_LINES = 10;
+
+        // --- DOM ---
+        const scrollableDiv = document.getElementById("scrollableDiv");
+        const scrollHeightDiv = document.getElementById("scrollHeight");
+        const primesContainer = document.getElementById("fibonacci-container");
+        const currentInfo = document.getElementById("currentInfo");
+        const jumpToInput = document.getElementById("jumpToInput");
+        const jumpToBtn = document.getElementById("jumpToBtn");
+        const viewport = document.getElementById("viewport");
+
+        // --- State ---
+        let currentIndex = 0n;
+        let isMouseDown = false;
+        let scrollTimeout = null;
+        let currentFibPairBigInt = [0n, 1n]; // [F(n), F(n-1)]
+
+        scrollHeightDiv.style.height = `${SCROLL_HEIGHT}px`;
+
+        function scrollToIndex(scrollPos) {
+          if (scrollPos <= 0) return 0n;
+          if (scrollPos >= SCROLL_HEIGHT) return MAX_INDEX;
+          const ratio = BigInt(Math.round(scrollPos)) * MAX_INDEX;
+          const index = ratio / BigInt(SCROLL_HEIGHT);
+          return index < MAX_INDEX ? index : MAX_INDEX;
+        }
+
+        function indexToScroll(index) {
+          if (index <= 0n) return 0;
+          if (index >= MAX_INDEX) return SCROLL_HEIGHT;
+          const scrollPos = (index * BigInt(SCROLL_HEIGHT)) / MAX_INDEX;
+          return Number(scrollPos);
+        }
+
+        function formatFibNumber(numBigInt) {
+          const numStr = numBigInt.toString();
+          if (numStr.length >= DIGIT_COUNT) return numStr;
+          const zerosNeeded = DIGIT_COUNT - numStr.length;
+          const zeros = "0".repeat(zerosNeeded);
+          return `<span class="leading-zeros">${zeros}</span>${numStr}`;
+        }
+
+        function renderVisibleWindow(startIndex, startFibN_BigInt, startFibNm1_BigInt) {
+          try {
+            startIndex = startIndex < 0n ? 0n : startIndex;
+            startIndex = startIndex > MAX_INDEX ? MAX_INDEX : startIndex;
+
+            primesContainer.innerHTML = "";
+
+            let fib_k = startFibN_BigInt;
+            let fib_km1 = startFibNm1_BigInt;
+            if (startIndex === 0n) {
+              fib_k = 0n;
+              fib_km1 = 1n;
+            }
+
+            for (let i = 0; i < VISIBLE_ITEMS; i++) {
+              const index = startIndex + BigInt(i);
+              if (index > MAX_INDEX) break;
+              let displayValue;
+              if (i === 0) {
+                displayValue = fib_k;
+              } else {
+                const nextFib = (fib_k + fib_km1) % MODULO_BIGINT;
+                fib_km1 = fib_k;
+                fib_k = nextFib;
+                displayValue = fib_k;
+              }
+              const indexStr = index.toString();
+              const el = document.createElement("div");
+              el.className = "fibonacci-item";
+              el.style.position = "absolute";
+              el.style.left = "0";
+              el.style.width = "100%";
+              el.style.height = `${ITEM_HEIGHT}px`;
+              el.style.transform = `translateY(${i * ITEM_HEIGHT + indexToScroll(startIndex + BigInt(i))}px)`;
+              el.innerHTML = `<span class="index">F(${indexStr})</span> <span class="fibonacci-value">${formatFibNumber(displayValue)}</span>`;
+              primesContainer.appendChild(el);
+            }
+
+            updateCurrentInfo(startIndex, startFibN_BigInt);
+
+            if (!isMouseDown) {
+              const targetScrollTop = indexToScroll(startIndex);
+              if (Math.abs(scrollableDiv.scrollTop - targetScrollTop) > 1) {
+                scrollableDiv.scrollTop = targetScrollTop;
+              }
+            }
+          } catch (e) {
+            console.error("Error during rendering:", e);
+          }
+        }
+
+        function updateCurrentInfo(index, valueBigInt) {
+          currentInfo.innerHTML = `Fibonacci #${index.toString()}: ${formatFibNumber(valueBigInt)}`;
+        }
+
+        // --- Event Handlers ---
+        window.addEventListener("resize", () => {
+          VISIBLE_ITEMS = calculateVisibleItems();
+          renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+        });
+
+
+        scrollableDiv.addEventListener("mousedown", (e) => {
+          if (e.offsetX >= scrollableDiv.clientWidth) {
+            isMouseDown = true;
+            viewport.focus();
+          }
+        });
+
+        window.addEventListener("mouseup", () => {
+          if (isMouseDown) {
+            isMouseDown = false;
+          }
+        });
+
+        function handleScrollDrag() {
+          const targetIndex = scrollToIndex(scrollableDiv.scrollTop);
+          const indexDiff =
+            currentIndex > targetIndex
+              ? currentIndex - targetIndex
+              : targetIndex - currentIndex;
+
+          if (indexDiff > BigInt(VISIBLE_ITEMS / 2)) {
+            console.log(`Scroll Drag Jump to: ${targetIndex}`);
+            try {
+              const targetScrollTop = indexToScroll(targetIndex);
+              const pairStrings = init_pair(targetIndex);
+              const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
+              currentIndex = targetIndex;
+              currentFibPairBigInt = pairBigInt;
+              scrollableDiv.scrollTop = targetScrollTop;
+              renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+            } catch (e) {
+              console.error("Error init_pair on scroll:", e);
+            }
+          }
+        }
+
+        scrollableDiv.addEventListener("scroll", () => {
+          if (isMouseDown) {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(handleScrollDrag, 50);
+          }
+        });
+
+        scrollableDiv.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          const direction = event.deltaY > 0 ? 1 : -1;
+
+          try {
+            let newPairStrings;
+            let finalIndexStr
+
+            if (direction === 1 && currentIndex < MAX_INDEX) {
+              newPairStrings = next_pair();
+              finalIndexStr = get_current_index();
+            } else if (direction === -1 && currentIndex > 0n) {
+              newPairStrings = prev_pair();
+              finalIndexStr = get_current_index();
+            } else {
+              return;
+            }
+
+            const newPairBigInt = [BigInt(newPairStrings[0]), BigInt(newPairStrings[1])];
+            const finalIndexBigInt = BigInt(finalIndexStr);
+            currentIndex = finalIndexBigInt;
+            currentFibPairBigInt = newPairBigInt;
+
+            renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+
+          } catch (e) {
+            console.error("Error during wheel scroll:", e);
+          }
+        }, { passive: false });
+
+        function handleJump() {
+          const indexStr = jumpToInput.value.trim().replace(/_/g, "");
+          if (!indexStr) return;
+
+          try {
+            let targetIndex = BigInt(indexStr);
+            if (targetIndex < 0n) targetIndex = 0n;
+            if (targetIndex > MAX_INDEX) targetIndex = MAX_INDEX;
+
+            const pairStrings = init_pair(targetIndex);
+            const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
+            currentIndex = targetIndex;
+            currentFibPairBigInt = pairBigInt;
+            scrollableDiv.scrollTop = indexToScroll(currentIndex);
+            renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+            jumpToInput.value = "";
+            jumpToInput.blur();
+          } catch (e) {
+            alert(`Error jumping to index: ${e}`);
+            console.error("Error during jump:", e);
+          }
+        }
+
+        jumpToBtn.addEventListener("click", handleJump);
+        jumpToInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") handleJump();
+        });
+
+        window.addEventListener("keydown", (event) => {
+          if (event.target === jumpToInput) {
+            return;
+          }
+
+          if (event.code === 'Space' || event.key === ' ') {
+            event.preventDefault();
+
+            let lastPairStrings = null;
+            let errorOccurred = false;
+            let stepsTaken = 0;
+
+            try {
+              for (let i = 0; i < SPACEBAR_SCROLL_LINES; i++) {
+                if (currentIndex >= MAX_INDEX) {
+                  console.log("Max index reached during spacebar scroll.");
+                  break;
+                }
+                lastPairStrings = next_pair();
+                currentIndex = currentIndex + 1n;
+                stepsTaken++;
+              }
+
+              if (lastPairStrings) {
+                const finalIndexStr = get_current_index();
+                const finalIndex = BigInt(finalIndexStr);
+                const finalPairBigInt = [BigInt(lastPairStrings[0]), BigInt(lastPairStrings[1])];
+                currentIndex = finalIndex;
+                currentFibPairBigInt = finalPairBigInt;
+                renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+              } else if (stepsTaken === 0) {
+                console.log("Spacebar pressed but already at max index.");
+              }
+
+            } catch (e) {
+              console.error("Error during spacebar scroll (likely hit max index):", e);
+            }
+          }
+        });
+
+        console.log("Initializing at index 0");
+        try {
+          const initialTargetIndex = 0n;
+          const initialPairStrings = init_pair(initialTargetIndex);
+          const initialPairBigInt = [BigInt(initialPairStrings[0]), BigInt(initialPairStrings[1])];
+          currentIndex = initialTargetIndex;
+          currentFibPairBigInt = initialPairBigInt;
+          renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+        } catch (e) {
+          console.error("Error during initial render:", e);
+          document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module or calculate initial Fibonacci: ${e}</div>`;
+        }
+      } catch (error) {
+        console.error("Initialization failed:", error);
+        document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module: ${error}</div>`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", run);
+  </script>
+</body>
+
+</html>
