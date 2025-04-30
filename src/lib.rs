@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 const MODULO: u128 = 10_000_000_000_000_000; // 10^16
-const MAX_INDEX: u128 = (1u128 << 64) - 1; // 2^64 - 1
+const MAX_INDEX: u128 = u128::MAX; // 2^128 - 1
 
 #[derive(Clone, Copy, Debug)]
 struct FibonacciPair {
@@ -129,20 +129,12 @@ fn bigint_to_u128(bi: BigInt) -> Result<u128, JsValue> {
     if bi.lt(&BigInt::from(0)) {
         return Err(JsValue::from_str("BigInt index cannot be negative"));
     }
-    let max_index_js_string = JsValue::from_str(&MAX_INDEX.to_string());
-    let max_index_bigint = BigInt::new(&max_index_js_string).map_err(|e| {
-        JsValue::from_str(&format!("Failed to create BigInt for MAX_INDEX: {:?}", e))
-    })?;
-    if bi.gt(&max_index_bigint) {
-        return Err(JsValue::from_str(&format!(
-            "BigInt index exceeds maximum {}",
-            MAX_INDEX
-        )));
-    }
+    
     let dec_str = bi
         .to_string(10)?
         .as_string()
         .ok_or_else(|| JsValue::from_str("Failed to convert BigInt to decimal string"))?;
+    
     u128::from_str(&dec_str).map_err(|e| {
         JsValue::from_str(&format!(
             "Failed to parse decimal BigInt string '{}': {}",

@@ -55,7 +55,7 @@
         await init();
 
         const SCROLL_HEIGHT = 1000000;
-        const MAX_INDEX = (1n << 64n) - 1n;
+        const MAX_INDEX = (1n << 128n) - 1n;
         const ITEM_HEIGHT = 30;
         const calculateVisibleItems = () =>
           Math.ceil(window.innerHeight / ITEM_HEIGHT) + 6;
@@ -151,16 +151,18 @@
           scrollPos = Math.max(0, Math.min(SCROLL_HEIGHT, scrollPos));
           if (scrollPos <= 0) return 0n;
           if (scrollPos >= SCROLL_HEIGHT) return MAX_INDEX;
-          const ratio = Number(scrollPos) / SCROLL_HEIGHT;
-          const index = BigInt(Math.round(ratio * Number(MAX_INDEX)));
+          const scrollPosBigInt = BigInt(Math.round(scrollPos));
+          const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
+          const index = (scrollPosBigInt * MAX_INDEX) / scrollHeightBigInt;
           return index < MAX_INDEX ? index : MAX_INDEX;
         }
         function indexToScroll(index) {
+          if (typeof index !== "bigint") index = BigInt(index);
           if (index <= 0n) return 0;
           if (index >= MAX_INDEX) return SCROLL_HEIGHT;
-          const ratio = Number(index) / Number(MAX_INDEX);
-          const scrollPos = ratio * SCROLL_HEIGHT;
-          return Math.round(scrollPos);
+          const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
+          const scrollPosBigInt = (index * scrollHeightBigInt) / MAX_INDEX;
+          return Number(scrollPosBigInt);
         }
         function formatFibNumber(numBigInt) {
           const numStr = (numBigInt % MODULO_BIGINT).toString();

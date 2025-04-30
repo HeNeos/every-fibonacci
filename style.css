@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/jetbrains-mono@latest/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/jetbrains-mono@latest/fonts/webfonts/JetBrainsMono-Bold.woff2') format('woff2');
+}
+
 :root {
   --bg-color: #f4fafa;
   --text-color: #2a3f4f;
