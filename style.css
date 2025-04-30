@@ -1,3 +1,65 @@
+:root {
+  --bg-color: #fff;
+  --text-color: #333;
+  --header-bg: #fff;
+  --header-shadow: rgba(0, 0, 0, 0.1);
+  --footer-bg: #fff;
+  --footer-border: #eee;
+  --subtle-text-color: #666;
+  --link-color: #0366d6;
+  --link-hover-color: #0258b8;
+  --button-bg: #0366d6;
+  --button-text: white;
+  --button-hover-bg: #0258b8;
+  --input-border: #ddd;
+  --input-bg: #fff;
+  --item-bg: #f8f9fa;
+  --item-hover-bg: #eef2f5;
+  --item-border: #eee;
+  --item-index-color: #666;
+  --item-value-color: #333;
+  --leading-zeros-color: #aaa;
+  --leading-zeros-opacity: 0.5;
+  --info-bg: rgba(255, 255, 255, 0.9);
+  --info-shadow: rgba(0, 0, 0, 0.15);
+  --error-bg: #fff0f0;
+  --error-text: #d32f2f;
+  --scrollbar-thumb: #888;
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb-border: #f1f1f1;
+}
+
+body.dark-mode {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --header-bg: #242424;
+  --header-shadow: rgba(255, 255, 255, 0.1);
+  --footer-bg: #242424;
+  --footer-border: #333;
+  --subtle-text-color: #aaa;
+  --link-color: #58a6ff;
+  --link-hover-color: #79b8ff;
+  --button-bg: #238636;
+  --button-text: white;
+  --button-hover-bg: #2ea043;
+  --input-border: #444;
+  --input-bg: #2a2a2a;
+  --item-bg: #2c2c2c;
+  --item-hover-bg: #383838;
+  --item-border: #444;
+  --item-index-color: #aaa;
+  --item-value-color: #e0e0e0;
+  --leading-zeros-color: #777;
+  --leading-zeros-opacity: 0.6;
+  --info-bg: rgba(40, 40, 40, 0.9);
+  --info-shadow: rgba(255, 255, 255, 0.1);
+  --error-bg: #4d1f1f;
+  --error-text: #f48a8a;
+  --scrollbar-thumb: #555;
+  --scrollbar-track: #2a2a2a;
+  --scrollbar-thumb-border: #2a2a2a;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,12 +69,12 @@
 html,
 body {
   height: 100%;
-  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background-color: #fff;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 header {
@@ -20,22 +82,24 @@ header {
   top: 0;
   left: 0;
   right: 0;
-  background-color: #fff;
-  padding: 15px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--header-bg);
+  padding: 15px 10px;
+  box-shadow: 0 2px 10px var(--header-shadow);
   z-index: 100;
   text-align: center;
-  height: 120px;
+  height: 130px;
+  transition: background-color 0.3s;
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   margin-bottom: 5px;
 }
 
 header p {
-  color: #666;
+  color: var(--subtle-text-color);
   margin-bottom: 15px;
+  font-size: 0.9rem;
 }
 
 .search-container {
@@ -44,60 +108,58 @@ header p {
   gap: 10px;
   max-width: 400px;
   margin: 0 auto;
+  padding: 0 10px;
 }
 
 .search-container input[type="text"] {
   padding: 8px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: var(--text-color);
   border-radius: 4px;
   font-size: 16px;
   flex-grow: 1;
-}
-
-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-  flex-grow: 1;
+  min-width: 150px;
 }
 
 button {
   padding: 8px 16px;
-  background-color: #0366d6;
-  color: white;
+  background-color: var(--button-bg);
+  color: var(--button-text);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 16px;
+  transition: background-color 0.2s;
 }
 
 button:hover {
-  background-color: #0258b8;
+  background-color: var(--button-hover-bg);
 }
 
 #current-info {
   position: fixed;
-  top: 130px;
-  right: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 8px 12px;
+  top: 140px;
+  right: 15px;
+  background-color: var(--info-bg);
+  padding: 6px 10px;
   border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 5px var(--info-shadow);
   font-family: monospace;
-  font-size: 13px;
+  font-size: 12px;
   z-index: 110;
   white-space: nowrap;
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #viewport {
   position: absolute;
-  top: 120px;
+  top: 130px;
   bottom: 40px;
   left: 0;
   right: 0;
   overflow: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 #scrollableDiv {
@@ -107,6 +169,24 @@ button:hover {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  overscroll-behavior: none;
+}
+
+#scrollableDiv::-webkit-scrollbar {
+  width: 12px;
+}
+
+#scrollableDiv::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 6px;
+  border: 2px solid var(--scrollbar-thumb-border);
+}
+
+#scrollableDiv::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-track);
+  border-radius: 6px;
 }
 
 #scrollHeight {
@@ -122,47 +202,53 @@ button:hover {
   top: 0;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 15px;
   will-change: transform;
 }
 
 .fibonacci-item {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  margin-bottom: 1px;
+  left: 15px;
+  right: 15px;
   cursor: default;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 15px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #eee;
+  padding: 5px 10px;
+  background-color: var(--item-bg);
+  border-bottom: 1px solid var(--item-border);
   border-radius: 4px;
   font-family: monospace;
-  font-size: 15px;
+  font-size: 14px;
   box-sizing: border-box;
   overflow: hidden;
   will-change: transform;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .fibonacci-item:hover {
-  background-color: #eef2f5;
+  background-color: var(--item-hover-bg);
 }
 
 .fibonacci-item .index {
-  color: #666;
-  font-size: 13px;
-  min-width: 100px;
+  color: var(--item-index-color);
+  font-size: 12px;
+  min-width: 80px;
   flex-shrink: 0;
+  padding-right: 10px;
 }
 
 .fibonacci-value {
-  font-weight: bold;
+  color: var(--item-value-color);
   word-break: break-all;
   text-align: right;
   flex-grow: 1;
+}
+
+.leading-zeros {
+  color: var(--leading-zeros-color);
+  opacity: var(--leading-zeros-opacity);
 }
 
 footer {
@@ -170,19 +256,42 @@ footer {
   bottom: 0;
   left: 0;
   right: 0;
-  text-align: center;
-  padding: 10px;
-  background-color: #fff;
-  color: #666;
-  font-size: 14px;
-  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background-color: var;
+  color: var;
+  font-size: 13px;
+  border-top: 1px solid var(--footer-border);
   height: 40px;
   z-index: 100;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+footer p {
+  margin: 0;
 }
 
 footer a {
-  color: #0366d6;
+  color: var(--link-color);
   text-decoration: none;
+}
+footer a:hover {
+  text-decoration: underline;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid var(--input-border);
+  color: var(--text-color);
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#theme-toggle:hover {
+  background-color: var(--item-hover-bg);
 }
 
 .error {
@@ -190,31 +299,79 @@ footer a {
   margin: 150px auto;
   text-align: center;
   padding: 30px;
-  background-color: #fff0f0;
+  background-color: var(--error-bg);
   border-radius: 8px;
-  color: #d32f2f;
+  color: var(--error-text);
 }
 
-.leading-zeros {
-  color: #aaa;
-  opacity: 0.5;
+@media (max-width: 768px) {
+  header {
+    height: auto;
+    padding: 10px;
+  }
+  h1 {
+    font-size: 1.5rem;
+  }
+  header p {
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+  .search-container {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    max-width: 90%;
+  }
+  #current-info {
+    top: auto;
+    bottom: 50px;
+    left: 10px;
+    right: auto;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  #viewport {
+    top: 160px;
+  }
+  #fibonacci-container {
+    padding: 0 10px;
+  }
+  .fibonacci-item {
+    left: 10px;
+    right: 10px;
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+  .fibonacci-item .index {
+    font-size: 11px;
+    min-width: 60px;
+  }
+  footer {
+    font-size: 12px;
+    padding: 0 10px;
+  }
+  #theme-toggle {
+    font-size: 11px;
+  }
 }
 
-#scrollableDiv {
-  scrollbar-width: thin;
-  overscroll-behavior: none;
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.3rem;
+  }
+  header p {
+    font-size: 0.8rem;
+  }
+  #current-info {
+    font-size: 10px;
+  }
+  .fibonacci-item {
+    font-size: 12px;
+  }
+  .fibonacci-item .index {
+    font-size: 10px;
+    min-width: 50px;
+    padding-right: 5px;
+  }
 }
 
-#scrollableDiv::-webkit-scrollbar {
-  width: 8px;
-}
-
-#scrollableDiv::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-  border: 2px solid #f1f1f1;
-}
-
-#scrollableDiv::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
-}
