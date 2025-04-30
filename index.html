@@ -76,6 +76,7 @@
         let touchStartY = 0;
         let isProcessingStep = false;
         let scrollThrottleTimeout = null;
+        let isJumping = false;
 
         scrollHeightDiv.style.height = `${SCROLL_HEIGHT}px`;
 
@@ -185,11 +186,17 @@
           if (isProcessingStep) {
             return;
           }
+          if (isJumping) {
+            return;
+          }
 
           const isContinuousInteraction = isDraggingScrollbar || isTouchScrolling;
 
           clearTimeout(scrollThrottleTimeout);
           scrollThrottleTimeout = setTimeout(() => {
+            if(isJumping){
+                return;
+            }
             const targetIndex = scrollToIndex(scrollableDiv.scrollTop);
 
             const indexDiff = currentIndex > targetIndex
@@ -289,6 +296,7 @@
           try {
             let targetIndex = BigInt(indexStr); if (targetIndex < 0n) targetIndex = 0n; if (targetIndex > MAX_INDEX) targetIndex = MAX_INDEX;
             console.log(`Jumping to index: ${targetIndex}`);
+            isJumping = true;
             const pairStrings = init_pair(targetIndex); const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
             currentIndex = targetIndex; currentFibPairBigInt = pairBigInt;
             isDraggingScrollbar = false; isTouching = false; isTouchScrolling = false; isProcessingStep = false;
@@ -297,6 +305,9 @@
             renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
             jumpToInput.value = ""; jumpToInput.blur();
           } catch (e) { alert(`Error jumping: ${e}`); console.error("Jump error:", e); }
+          finally {
+            requestAnimationFrame(() => { isJumping = false; });
+          }
         }
         jumpToBtn.addEventListener("click", handleJump);
         jumpToInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleJump(); });
