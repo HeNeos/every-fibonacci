@@ -176,7 +176,7 @@
               ? currentIndex - targetIndex
               : targetIndex - currentIndex;
 
-          if (indexDiff > BigInt(VISIBLE_ITEMS / 2)) {
+          if (indexDiff > BigInt(Math.floor(VISIBLE_ITEMS / 2))) {
             console.log(`Scroll Drag Jump to: ${targetIndex}`);
             try {
               const targetScrollTop = indexToScroll(targetIndex);
