@@ -4,7 +4,6 @@ use std::str::FromStr;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
-// We'll keep last 16 digits
 const MODULO: u128 = 10_000_000_000_000_000; // 10^16
 const MAX_INDEX: u128 = (1u128 << 64) - 1; // 2^64 - 1
 
@@ -31,7 +30,6 @@ impl FibonacciState {
     }
 
     fn matrix_power(mut matrix: [u128; 4], mut n: u128) -> [u128; 4] {
-        // Matrix multiplication function (nested for locality)
         fn matrix_multiply(a: &[u128; 4], b: &[u128; 4]) -> [u128; 4] {
             [
                 (a[0]
@@ -53,7 +51,7 @@ impl FibonacciState {
             ]
         }
 
-        let mut result = [1, 0, 0, 1]; // Identity matrix
+        let mut result = [1, 0, 0, 1];
         while n > 0 {
             if n % 2 == 1 {
                 result = matrix_multiply(&result, &matrix);
@@ -115,7 +113,6 @@ impl FibonacciState {
         Ok(())
     }
 
-    // *** CHANGE HERE: Return Vec<String> ***
     fn get_current_pair_as_string_vec(&self) -> Vec<String> {
         vec![
             self.current_pair.fn_val.to_string(),   // F(n) as String
@@ -156,7 +153,6 @@ fn bigint_to_u128(bi: BigInt) -> Result<u128, JsValue> {
 
 static GENERATOR: Lazy<Mutex<FibonacciState>> = Lazy::new(|| Mutex::new(FibonacciState::new()));
 
-// *** CHANGE HERE: Return Vec<String> ***
 #[wasm_bindgen]
 pub fn init_pair(n_bigint: BigInt) -> Result<Vec<String>, JsValue> {
     let n = bigint_to_u128(n_bigint)?;
@@ -167,7 +163,6 @@ pub fn init_pair(n_bigint: BigInt) -> Result<Vec<String>, JsValue> {
     Ok(generator.get_current_pair_as_string_vec()) // Use new method
 }
 
-// *** CHANGE HERE: Return Vec<String> ***
 #[wasm_bindgen]
 pub fn next_pair() -> Result<Vec<String>, JsValue> {
     let mut generator = GENERATOR
@@ -177,7 +172,6 @@ pub fn next_pair() -> Result<Vec<String>, JsValue> {
     Ok(generator.get_current_pair_as_string_vec()) // Use new method
 }
 
-// *** CHANGE HERE: Return Vec<String> ***
 #[wasm_bindgen]
 pub fn prev_pair() -> Result<Vec<String>, JsValue> {
     let mut generator = GENERATOR

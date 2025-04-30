@@ -40,6 +40,7 @@
 
   --item-height: 30px;
   --border-radius: 4px;
+  --panel-width: 20px;
 }
 
 body.dark-mode {
@@ -52,7 +53,7 @@ body.dark-mode {
   --subtle-text-color: #48b4b9;
   --link-color: #bd93f9;
   --link-hover-color: #ff79c4;
-  --button-bg: #bd93f9;
+  --button-bg: #282a36;
   --button-text: #f8f8f2;
   --button-border: 1px solid #bd93f9;
   --button-hover-bg: #ff79c4;
@@ -187,9 +188,63 @@ button:hover {
   position: absolute;
   top: 130px;
   bottom: 40px;
-  left: 0;
+  left: var(--panel-width);
   right: 0;
   overflow: hidden;
+}
+
+.side-panel {
+  position: absolute;
+  top: 130px;
+  bottom: 40px;
+  left: 0;
+  width: var(--panel-width);
+  display: flex;
+  flex-direction: column;
+  z-index: 150;
+  user-select: none;
+  touch-action: none;
+}
+
+.side-panel .panel-btn {
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+.panel-btn {
+  flex: 1;
+  border: 0px;
+  border-left: none;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.panel-btn:first-child {
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+  border-bottom: none;
+}
+
+.panel-btn:last-child {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+.panel-btn:hover {
+  background-color: var(--footer-border);
 }
 
 #scrollableDiv {
@@ -199,6 +254,7 @@ button:hover {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  touch-action: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   overscroll-behavior: none;
@@ -350,7 +406,7 @@ footer a:hover {
 
 @media (max-width: 768px) {
   header {
-    padding: 7px 15px;
+    padding: 11px 15px;
     height: auto;
   }
 
@@ -375,22 +431,22 @@ footer a:hover {
   }
 
   #current-info {
-    top: auto;
-    bottom: 50px;
-    left: 10px;
-    right: auto;
+    top: auto !important;
+    right: auto !important;
+    bottom: 50px !important;
+    left: 5px !important;
+    z-index: 200;
     font-size: 0.6875rem;
-    padding: 4px 8px;
   }
 
   #viewport {
     top: 160px;
-    bottom: 40px;
+    left: var(--panel-width);
   }
 
-  #fibonacci-container {
-    padding: 0 10px;
-    max-width: none;
+  .side-panel {
+    top: 160px;
+    bottom: 40px;
   }
 
   .fibonacci-item {
@@ -417,6 +473,11 @@ footer a:hover {
 }
 
 @media (max-width: 480px) {
+  header {
+    padding: 16px 15px;
+    height: auto;
+  }
+
   h1 {
     font-size: 1.1rem;
   }
@@ -434,6 +495,8 @@ footer a:hover {
   }
 
   #current-info {
+    left: calc(var(--panel-width) + 10px) !important;
+    right: auto;
     font-size: 0.625rem;
   }
 

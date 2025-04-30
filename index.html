@@ -26,6 +26,14 @@
       <div id="fibonacci-container"></div>
     </div>
   </div>
+  <div class="side-panel">
+    <button id="panel-up" class="panel-btn" aria-label="Scroll up">
+      ▲
+    </button>
+    <button id="panel-down" class="panel-btn" aria-label="Scroll down">
+      ▼
+    </button>
+  </div>
   <footer>
     <p>
       Powered by WebAssembly + Rust |
@@ -56,7 +64,8 @@
         const MODULO_BIGINT = 10n ** 16n;
         const SPACEBAR_SCROLL_LINES = 10;
         const TOUCH_STEP_THRESHOLD = ITEM_HEIGHT * 0.7;
-        const SCROLL_UPDATE_THRESHOLD = 1n;
+        const TOUCH_MOVE_INTERVAL_MS = 100;
+        const SCROLL_UPDATE_THRESHOLD = 16n;
         const SCROLL_THROTTLE_MS = 1;
 
         const scrollableDiv = document.getElementById("scrollableDiv");
@@ -67,6 +76,8 @@
         const jumpToBtn = document.getElementById("jumpToBtn");
         const viewport = document.getElementById("viewport");
         const themeToggleBtn = document.getElementById("theme-toggle");
+        const panelUp = document.getElementById("panel-up");
+        const panelDown = document.getElementById("panel-down");
 
         let currentIndex = 0n;
         let currentFibPairBigInt = [0n, 1n];
@@ -77,8 +88,39 @@
         let isProcessingStep = false;
         let scrollThrottleTimeout = null;
         let isJumping = false;
+        let touchMoveInterval = null;
+        let touchMoveDirection = 0;
 
         scrollHeightDiv.style.height = `${SCROLL_HEIGHT}px`;
+
+        function attachPanelButton(btn, dir) {
+          let intervalId = null;
+          btn.addEventListener(
+            "pointerdown",
+            (e) => {
+              if (e.pointerType !== "touch" && e.pointerType !== "mouse")
+                return;
+              handleStepScroll(dir);
+              intervalId = setInterval(
+                () => handleStepScroll(dir),
+                TOUCH_MOVE_INTERVAL_MS
+              );
+              e.preventDefault();
+            },
+            { passive: false }
+          );
+          ["pointerup", "pointerleave", "pointercancel"].forEach((evt) =>
+            btn.addEventListener(evt, () => {
+              if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+              }
+            })
+          );
+        }
+
+        attachPanelButton(panelUp, -1);
+        attachPanelButton(panelDown, 1);
 
         function applyTheme(theme) {
           if (theme === "dark") {
@@ -155,14 +197,14 @@
             if (!isDraggingScrollbar && !isTouching && !isProcessingStep) {
               const targetScrollTop = indexToScroll(startIndex);
               if (Math.abs(scrollableDiv.scrollTop - targetScrollTop) > ITEM_HEIGHT / 2) {
-                 scrollableDiv.scrollTop = targetScrollTop;
+                scrollableDiv.scrollTop = targetScrollTop;
               }
             }
           } catch (e) { console.error("Error during rendering:", e); currentInfo.innerHTML = `<span style="color: red;">Render Error</span>`; }
         }
 
         function updateCurrentInfo(index, valueBigInt) {
-            currentInfo.innerHTML = `F(${index.toString()}): ${formatFibNumber(valueBigInt)}`;
+          currentInfo.innerHTML = `F(${index.toString()}): ${formatFibNumber(valueBigInt)}`;
         }
 
         window.addEventListener("resize", () => {
@@ -194,14 +236,14 @@
 
           clearTimeout(scrollThrottleTimeout);
           scrollThrottleTimeout = setTimeout(() => {
-            if(isJumping){
-                return;
+            if (isJumping) {
+              return;
             }
             const targetIndex = scrollToIndex(scrollableDiv.scrollTop);
 
             const indexDiff = currentIndex > targetIndex
-                ? currentIndex - targetIndex
-                : targetIndex - currentIndex;
+              ? currentIndex - targetIndex
+              : targetIndex - currentIndex;
 
             if (indexDiff >= SCROLL_UPDATE_THRESHOLD) {
               try {
@@ -235,22 +277,15 @@
             currentIndex = finalIndexBigInt; currentFibPairBigInt = newPairBigInt;
             renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
           } catch (e) {
-             console.error(`Error during step ${direction}:`, e);
-             try {
-               const pairStrings = init_pair(currentIndex);
-               currentFibPairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
-               renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+            console.error(`Error during step ${direction}:`, e);
+            try {
+              const pairStrings = init_pair(currentIndex);
+              currentFibPairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
+              renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
             } catch (syncErr) { console.error("Failed to re-sync state:", syncErr); }
           }
           finally { requestAnimationFrame(() => { isProcessingStep = false; }); }
         }
-
-        scrollableDiv.addEventListener("wheel", (event) => {
-          if (isTouching || isDraggingScrollbar) return;
-          event.preventDefault();
-          const direction = event.deltaY > 0 ? 1 : -1;
-          handleStepScroll(direction);
-        }, { passive: false });
 
         scrollableDiv.addEventListener("touchstart", (event) => {
           if (isDraggingScrollbar) return;
@@ -285,11 +320,58 @@
           }
         });
         scrollableDiv.addEventListener("touchcancel", (event) => {
-           if (isTouching) {
-             isTouching = false;
-             isTouchScrolling = false;
-           }
+          if (isTouching) {
+            isTouching = false;
+            isTouchScrolling = false;
+          }
         });
+
+        // scrollableDiv.addEventListener(
+        //   "pointerdown",
+        //   (e) => {
+        //     if (e.pointerType !== "touch") return;
+        //     isTouching = true;
+        //     touchMoveDirection =
+        //       e.clientY < window.innerHeight / 2 ? -1 : 1;
+        //     handleStepScroll(touchMoveDirection);
+        //     touchMoveInterval = setInterval(() => {
+        //       if (!isTouching) return clearTouchInterval();
+        //       handleStepScroll(touchMoveDirection);
+        //     }, TOUCH_MOVE_INTERVAL_MS);
+        //     e.preventDefault();
+        //   },
+        //   { passive: false }
+        // );
+
+        // scrollableDiv.addEventListener(
+        //   "pointermove",
+        //   (e) => {
+        //     if (!isTouching || e.pointerType !== "touch") return;
+        //     touchMoveDirection =
+        //       e.clientY < window.innerHeight / 2 ? -1 : 1;
+        //     e.preventDefault();
+        //   },
+        //   { passive: false }
+        // );
+
+        // window.addEventListener("pointerup", clearTouchInterval);
+        // window.addEventListener("pointercancel", clearTouchInterval);
+
+        // function clearTouchInterval() {
+        //   if (touchMoveInterval) {
+        //     clearInterval(touchMoveInterval);
+        //     touchMoveInterval = null;
+        //   }
+        //   isTouching = false;
+        //   isTouchScrolling = false;
+        // }
+
+        scrollableDiv.addEventListener("wheel", (event) => {
+          if (isTouching || isDraggingScrollbar) return;
+          event.preventDefault();
+          const direction = event.deltaY > 0 ? 1 : -1;
+          handleStepScroll(direction);
+        }, { passive: false });
 
         function handleJump() {
           const indexStr = jumpToInput.value.trim().replace(/_/g, ""); if (!indexStr) return;
@@ -318,8 +400,8 @@
           if (event.code === 'Space' || event.key === ' ') {
             event.preventDefault(); let steps = 0;
             const scrollInterval = setInterval(() => {
-                if (steps >= SPACEBAR_SCROLL_LINES || currentIndex >= MAX_INDEX) { clearInterval(scrollInterval); return; }
-                handleStepScroll(1); steps++;
+              if (steps >= SPACEBAR_SCROLL_LINES || currentIndex >= MAX_INDEX) { clearInterval(scrollInterval); return; }
+              handleStepScroll(1); steps++;
             }, 60); return;
           } else if (event.key === 'ArrowDown') direction = 1;
           else if (event.key === 'ArrowUp') direction = -1;
@@ -334,12 +416,11 @@
           scrollableDiv.scrollTop = indexToScroll(currentIndex);
           renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
         } catch (e) { console.error("Initial render error:", e); document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module or calculate initial Fibonacci: ${e}</div>`; }
-
       } catch (error) { console.error("Initialization failed:", error); document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module: ${error}</div>`; }
     }
 
     document.addEventListener("DOMContentLoaded", run);
   </script>
 </body>
-</html>
 
+</html>
