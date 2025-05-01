@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Every Fibonacci Number</title>
+  <title>(Almost) Every Fibonacci Number</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -13,7 +13,7 @@
     <h1>(Almost) Every Fibonacci Number</h1>
     <p>Scroll through the Fibonacci sequence. (Last 16 digits shown)</p>
     <div class="search-container">
-      <input type="text" id="jumpToInput" placeholder="Jump to index (e.g., 1000)..." />
+      <input type="text" id="jumpToInput" placeholder="Jump to index (up to, 2.21e48)..." />
       <button id="jumpToBtn">Go</button>
     </div>
   </header>
@@ -55,7 +55,9 @@
         await init();
 
         const SCROLL_HEIGHT = 1000000;
-        const MAX_INDEX = (1n << 128n) - 1n;
+        // Fib(Fib(Fib(7))) ~ 2^160.597 ~ 10^48.3446
+        const MAX_DISPLAY_INDEX = 2211236406303914545699412969744873993387956988653n;
+        const PISANO_PERIOD_10_16 = 15n * 10n ** 15n;
         const ITEM_HEIGHT = 30;
         const calculateVisibleItems = () =>
           Math.ceil(window.innerHeight / ITEM_HEIGHT) + 6;
@@ -66,7 +68,7 @@
         const TOUCH_STEP_THRESHOLD = ITEM_HEIGHT * 0.7;
         const TOUCH_MOVE_INTERVAL_MS = 100;
         const SCROLL_UPDATE_THRESHOLD = 16n;
-        const SCROLL_THROTTLE_MS = 1;
+        const SCROLL_THROTTLE_MS = 3;
 
         const scrollableDiv = document.getElementById("scrollableDiv");
         const scrollHeightDiv = document.getElementById("scrollHeight");
@@ -88,8 +90,6 @@
         let isProcessingStep = false;
         let scrollThrottleTimeout = null;
         let isJumping = false;
-        let touchMoveInterval = null;
-        let touchMoveDirection = 0;
 
         scrollHeightDiv.style.height = `${SCROLL_HEIGHT}px`;
 
@@ -118,7 +118,6 @@
             })
           );
         }
-
         attachPanelButton(panelUp, -1);
         attachPanelButton(panelDown, 1);
 
@@ -150,20 +149,22 @@
         function scrollToIndex(scrollPos) {
           scrollPos = Math.max(0, Math.min(SCROLL_HEIGHT, scrollPos));
           if (scrollPos <= 0) return 0n;
-          if (scrollPos >= SCROLL_HEIGHT) return MAX_INDEX;
+          if (scrollPos >= SCROLL_HEIGHT) return MAX_DISPLAY_INDEX;
           const scrollPosBigInt = BigInt(Math.round(scrollPos));
           const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
-          const index = (scrollPosBigInt * MAX_INDEX) / scrollHeightBigInt;
-          return index < MAX_INDEX ? index : MAX_INDEX;
+          const index = (scrollPosBigInt * MAX_DISPLAY_INDEX) / scrollHeightBigInt;
+          return index < MAX_DISPLAY_INDEX ? index : MAX_DISPLAY_INDEX;
         }
+
         function indexToScroll(index) {
           if (typeof index !== "bigint") index = BigInt(index);
           if (index <= 0n) return 0;
-          if (index >= MAX_INDEX) return SCROLL_HEIGHT;
+          if (index >= MAX_DISPLAY_INDEX) return SCROLL_HEIGHT;
           const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
-          const scrollPosBigInt = (index * scrollHeightBigInt) / MAX_INDEX;
+          const scrollPosBigInt = (index * scrollHeightBigInt) / MAX_DISPLAY_INDEX;
           return Number(scrollPosBigInt);
         }
+
         function formatFibNumber(numBigInt) {
           const numStr = (numBigInt % MODULO_BIGINT).toString();
           if (numStr.length >= DIGIT_COUNT) return numStr;
@@ -172,41 +173,65 @@
           return `<span class="leading-zeros">${zeros}</span>${numStr}`;
         }
 
-        function renderVisibleWindow(startIndex, startFibN_BigInt, startFibNm1_BigInt) {
+        function renderVisibleWindow(displayStartIndex, startFibN_BigInt, startFibNm1_BigInt) {
           try {
-            startIndex = startIndex < 0n ? 0n : startIndex;
-            startIndex = startIndex > MAX_INDEX ? MAX_INDEX : startIndex;
+            displayStartIndex = displayStartIndex < 0n ? 0n : displayStartIndex;
+            displayStartIndex = displayStartIndex > MAX_DISPLAY_INDEX ? MAX_DISPLAY_INDEX : displayStartIndex;
+
             primesContainer.innerHTML = "";
-            let fib_k = startFibN_BigInt; let fib_km1 = startFibNm1_BigInt;
-            if (startIndex === 0n) { fib_k = 0n; fib_km1 = 1n; }
-            const baseScrollTop = indexToScroll(startIndex);
+            let fib_k = startFibN_BigInt;
+            let fib_km1 = startFibNm1_BigInt;
+
+            if (displayStartIndex === 0n) {
+              fib_k = 0n;
+              fib_km1 = 1n;
+            }
+
+            const baseScrollTop = indexToScroll(displayStartIndex);
 
             for (let i = 0; i < VISIBLE_ITEMS; i++) {
-              const index = startIndex + BigInt(i); if (index > MAX_INDEX) break;
+              const currentDisplayIndex = displayStartIndex + BigInt(i);
+              if (currentDisplayIndex > MAX_DISPLAY_INDEX) break;
+
               let displayValue;
-              if (i === 0 && startIndex === 0n) { displayValue = 0n; }
-              else if (i === 0 && startIndex > 0n) { displayValue = fib_k; }
-              else { const nextFib = (fib_k + fib_km1) % MODULO_BIGINT; fib_km1 = fib_k; fib_k = nextFib; displayValue = fib_k; }
-              const indexStr = index.toString(); const el = document.createElement("div");
-              el.className = "fibonacci-item"; el.style.position = "absolute";
-              el.style.left = "0"; el.style.right = "0"; el.style.height = `${ITEM_HEIGHT}px`;
+              if (i === 0 && displayStartIndex === 0n) {
+                displayValue = 0n;
+              } else if (i === 0) {
+                displayValue = fib_k;
+              } else {
+                const nextFib = (fib_k + fib_km1) % MODULO_BIGINT;
+                fib_km1 = fib_k;
+                fib_k = nextFib;
+                displayValue = fib_k;
+              }
+
+              const indexStr = currentDisplayIndex.toString();
+              const el = document.createElement("div");
+              el.className = "fibonacci-item";
+              el.style.position = "absolute";
+              el.style.left = "0";
+              el.style.right = "0";
+              el.style.height = `${ITEM_HEIGHT}px`;
               el.style.transform = `translateY(${baseScrollTop + i * ITEM_HEIGHT}px)`;
-              el.innerHTML = `<span class="index">F(${indexStr})</span> <span class="fibonacci-value">${formatFibNumber(displayValue)}</span>`;
+              el.innerHTML = `<span class="index">Fib(${indexStr})</span> <span class="fibonacci-value">${formatFibNumber(displayValue)}</span>`;
               primesContainer.appendChild(el);
             }
-            updateCurrentInfo(startIndex, startIndex === 0n ? 0n : startFibN_BigInt);
+            updateCurrentInfo(displayStartIndex, (displayStartIndex === 0n) ? 0n : startFibN_BigInt);
 
-            if (!isDraggingScrollbar && !isTouching && !isProcessingStep) {
-              const targetScrollTop = indexToScroll(startIndex);
+            if (!isDraggingScrollbar && !isTouching && !isProcessingStep && !isJumping) {
+              const targetScrollTop = indexToScroll(displayStartIndex);
               if (Math.abs(scrollableDiv.scrollTop - targetScrollTop) > ITEM_HEIGHT / 2) {
                 scrollableDiv.scrollTop = targetScrollTop;
               }
             }
-          } catch (e) { console.error("Error during rendering:", e); currentInfo.innerHTML = `<span style="color: red;">Render Error</span>`; }
+          } catch (e) {
+            console.error("Error during rendering:", e);
+            currentInfo.innerHTML = `<span style="color: red;">Render Error</span>`;
+          }
         }
 
-        function updateCurrentInfo(index, valueBigInt) {
-          currentInfo.innerHTML = `F(${index.toString()}): ${formatFibNumber(valueBigInt)}`;
+        function updateCurrentInfo(displayIndex, valueBigInt) {
+          currentInfo.innerHTML = `Fib(${displayIndex.toString()}): ${formatFibNumber(valueBigInt)}`;
         }
 
         window.addEventListener("resize", () => {
@@ -220,6 +245,7 @@
             clearTimeout(scrollThrottleTimeout);
           }
         });
+
         window.addEventListener("mouseup", () => {
           if (isDraggingScrollbar) {
             isDraggingScrollbar = false;
@@ -227,32 +253,30 @@
         });
 
         scrollableDiv.addEventListener("scroll", () => {
-          if (isProcessingStep) {
+          if (isProcessingStep || isJumping) {
             return;
           }
-          if (isJumping) {
-            return;
-          }
-
-          const isContinuousInteraction = isDraggingScrollbar || isTouchScrolling;
 
           clearTimeout(scrollThrottleTimeout);
           scrollThrottleTimeout = setTimeout(() => {
             if (isJumping) {
               return;
             }
-            const targetIndex = scrollToIndex(scrollableDiv.scrollTop);
 
-            const indexDiff = currentIndex > targetIndex
-              ? currentIndex - targetIndex
-              : targetIndex - currentIndex;
+            const targetDisplayIndex = scrollToIndex(scrollableDiv.scrollTop);
+            const indexDiff = currentIndex > targetDisplayIndex
+              ? currentIndex - targetDisplayIndex
+              : targetDisplayIndex - currentIndex;
 
             if (indexDiff >= SCROLL_UPDATE_THRESHOLD) {
               try {
-                const pairStrings = init_pair(targetIndex);
+                const wasmIndex = targetDisplayIndex % PISANO_PERIOD_10_16 + PISANO_PERIOD_10_16;
+                const pairStrings = init_pair(wasmIndex);
                 const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
-                currentIndex = targetIndex;
+
+                currentIndex = targetDisplayIndex;
                 currentFibPairBigInt = pairBigInt;
+
                 renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
               } catch (e) {
                 console.error("Error init_pair on scroll:", e);
@@ -263,30 +287,48 @@
         });
 
         async function handleStepScroll(direction) {
-          if (isProcessingStep) return;
+          if (isProcessingStep || isJumping) return;
+
+          const targetDisplayIndex = currentIndex + BigInt(direction);
+          if (targetDisplayIndex < 0n || targetDisplayIndex > MAX_DISPLAY_INDEX) {
+            return;
+          }
+
           isProcessingStep = true;
           isTouchScrolling = false;
 
           try {
-            let newPairStrings; let finalIndexStr;
-            if (direction === 1 && currentIndex < MAX_INDEX) {
-              newPairStrings = next_pair(); finalIndexStr = get_current_index();
-            } else if (direction === -1 && currentIndex > 0n) {
-              newPairStrings = prev_pair(); finalIndexStr = get_current_index();
-            } else { isProcessingStep = false; return; }
+            let newPairStrings;
+            if (direction === 1) {
+              newPairStrings = next_pair();
+            } else {
+              newPairStrings = prev_pair();
+            }
             const newPairBigInt = [BigInt(newPairStrings[0]), BigInt(newPairStrings[1])];
-            const finalIndexBigInt = BigInt(finalIndexStr);
-            currentIndex = finalIndexBigInt; currentFibPairBigInt = newPairBigInt;
+
+            currentIndex = targetDisplayIndex;
+            currentFibPairBigInt = newPairBigInt;
+
             renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
+
+            if (!isDraggingScrollbar && !isTouching) {
+              scrollableDiv.scrollTop = indexToScroll(currentIndex);
+            }
           } catch (e) {
             console.error(`Error during step ${direction}:`, e);
             try {
-              const pairStrings = init_pair(currentIndex);
+              const wasmIndex = currentIndex % PISANO_PERIOD_10_16 + PISANO_PERIOD_10_16;
+              const pairStrings = init_pair(wasmIndex);
               currentFibPairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
               renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
-            } catch (syncErr) { console.error("Failed to re-sync state:", syncErr); }
+            } catch (syncErr) {
+              console.error("Failed to re-sync state after step error:", syncErr);
+            }
+          } finally {
+            requestAnimationFrame(() => { 
+              isProcessingStep = false; 
+            });
           }
-          finally { requestAnimationFrame(() => { isProcessingStep = false; }); }
         }
 
         scrollableDiv.addEventListener("touchstart", (event) => {
@@ -315,110 +357,112 @@
           }
         }, { passive: false });
 
-        scrollableDiv.addEventListener("touchend", (event) => {
-          if (isTouching) {
-            isTouching = false;
-            isTouchScrolling = false;
-          }
-        });
-        scrollableDiv.addEventListener("touchcancel", (event) => {
-          if (isTouching) {
+        scrollableDiv.addEventListener("touchend", () => {
+          if(isTouching){
             isTouching = false;
             isTouchScrolling = false;
           }
         });
 
-        // scrollableDiv.addEventListener(
-        //   "pointerdown",
-        //   (e) => {
-        //     if (e.pointerType !== "touch") return;
-        //     isTouching = true;
-        //     touchMoveDirection =
-        //       e.clientY < window.innerHeight / 2 ? -1 : 1;
-        //     handleStepScroll(touchMoveDirection);
-        //     touchMoveInterval = setInterval(() => {
-        //       if (!isTouching) return clearTouchInterval();
-        //       handleStepScroll(touchMoveDirection);
-        //     }, TOUCH_MOVE_INTERVAL_MS);
-        //     e.preventDefault();
-        //   },
-        //   { passive: false }
-        // );
-
-        // scrollableDiv.addEventListener(
-        //   "pointermove",
-        //   (e) => {
-        //     if (!isTouching || e.pointerType !== "touch") return;
-        //     touchMoveDirection =
-        //       e.clientY < window.innerHeight / 2 ? -1 : 1;
-        //     e.preventDefault();
-        //   },
-        //   { passive: false }
-        // );
-
-        // window.addEventListener("pointerup", clearTouchInterval);
-        // window.addEventListener("pointercancel", clearTouchInterval);
-
-        // function clearTouchInterval() {
-        //   if (touchMoveInterval) {
-        //     clearInterval(touchMoveInterval);
-        //     touchMoveInterval = null;
-        //   }
-        //   isTouching = false;
-        //   isTouchScrolling = false;
-        // }
+        scrollableDiv.addEventListener("touchcancel", () => {
+          if(isTouching){
+            isTouching = false;
+            isTouchScrolling = false;
+          }
+        });
 
         scrollableDiv.addEventListener("wheel", (event) => {
-          if (isTouching || isDraggingScrollbar) return;
+          if (isTouching || isDraggingScrollbar || isJumping) return;
           event.preventDefault();
           const direction = event.deltaY > 0 ? 1 : -1;
           handleStepScroll(direction);
         }, { passive: false });
 
         function handleJump() {
-          const indexStr = jumpToInput.value.trim().replace(/_/g, ""); if (!indexStr) return;
+          const indexStr = jumpToInput.value.trim().replace(/_/g, "");
+          if (!indexStr) return;
+
           try {
-            let targetIndex = BigInt(indexStr); if (targetIndex < 0n) targetIndex = 0n; if (targetIndex > MAX_INDEX) targetIndex = MAX_INDEX;
-            console.log(`Jumping to index: ${targetIndex}`);
+            let targetDisplayIndex = BigInt(indexStr);
+            if (targetDisplayIndex < 0n) targetDisplayIndex = 0n;
+            if (targetDisplayIndex > MAX_DISPLAY_INDEX) targetDisplayIndex = MAX_DISPLAY_INDEX;
+
             isJumping = true;
-            const pairStrings = init_pair(targetIndex); const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
-            currentIndex = targetIndex; currentFibPairBigInt = pairBigInt;
-            isDraggingScrollbar = false; isTouching = false; isTouchScrolling = false; isProcessingStep = false;
-            clearTimeout(scrollThrottleTimeout);
+
+            const wasmIndex = targetDisplayIndex % PISANO_PERIOD_10_16 + PISANO_PERIOD_10_16;
+            const pairStrings = init_pair(wasmIndex);
+            const pairBigInt = [BigInt(pairStrings[0]), BigInt(pairStrings[1])];
+
+            currentIndex = targetDisplayIndex;
+            currentFibPairBigInt = pairBigInt;
+
+            isDraggingScrollbar = false;
+            isTouching = false;
+            isTouchScrolling = false;
             scrollableDiv.scrollTop = indexToScroll(currentIndex);
             renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
-            jumpToInput.value = ""; jumpToInput.blur();
-          } catch (e) { alert(`Error jumping: ${e}`); console.error("Jump error:", e); }
-          finally {
-            requestAnimationFrame(() => { isJumping = false; });
+
+            jumpToInput.value = "";
+            jumpToInput.blur();
+          } catch (e) {
+            alert(`Error jumping: Invalid input or calculation error`);
+            console.error("Jump error:", e);
+          } finally {
+            setTimeout(() => { isJumping = false; }, 100);
           }
         }
+
         jumpToBtn.addEventListener("click", handleJump);
-        jumpToInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleJump(); });
+        jumpToInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") handleJump();
+        });
 
         window.addEventListener("keydown", (event) => {
           if (event.target === jumpToInput || event.metaKey || event.ctrlKey) return;
-          let direction = 0;
+
           if (event.code === 'Space' || event.key === ' ') {
-            event.preventDefault(); let steps = 0;
+            event.preventDefault();
+            let steps = 0;
             const scrollInterval = setInterval(() => {
-              if (steps >= SPACEBAR_SCROLL_LINES || currentIndex >= MAX_INDEX) { clearInterval(scrollInterval); return; }
-              handleStepScroll(1); steps++;
-            }, 60); return;
-          } else if (event.key === 'ArrowDown') direction = 1;
-          else if (event.key === 'ArrowUp') direction = -1;
-          if (direction !== 0) { event.preventDefault(); handleStepScroll(direction); }
+              if (steps >= SPACEBAR_SCROLL_LINES || currentIndex >= MAX_DISPLAY_INDEX) {
+                clearInterval(scrollInterval);
+                return;
+              }
+              handleStepScroll(1);
+              steps++;
+            }, 60);
+            return;
+          } else if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+            event.preventDefault();
+            const multiplier = event.key === 'PageDown' ? Math.max(1, Math.floor(VISIBLE_ITEMS / 2)) : 1;
+            handleStepScroll(multiplier);
+          } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+            event.preventDefault();
+            const multiplier = event.key === 'PageUp' ? Math.max(1, Math.floor(VISIBLE_ITEMS / 2)) : 1;
+            handleStepScroll(-multiplier);
+          }
         });
 
+        // Initialize display with F(0)
         console.log("Initializing at index 0");
         try {
-          const initialTargetIndex = 0n; const initialPairStrings = init_pair(initialTargetIndex);
+          const initialDisplayIndex = 0n;
+          const initialWasmIndex = initialDisplayIndex % PISANO_PERIOD_10_16 + PISANO_PERIOD_10_16;
+          const initialPairStrings = init_pair(initialWasmIndex);
           const initialPairBigInt = [BigInt(initialPairStrings[0]), BigInt(initialPairStrings[1])];
-          currentIndex = initialTargetIndex; currentFibPairBigInt = initialPairBigInt;
+
+          currentIndex = initialDisplayIndex;
+          currentFibPairBigInt = initialPairBigInt;
           scrollableDiv.scrollTop = indexToScroll(currentIndex);
           renderVisibleWindow(currentIndex, currentFibPairBigInt[0], currentFibPairBigInt[1]);
-        } catch (e) { console.error("Initial render error:", e); document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module or calculate initial Fibonacci: ${e}</div>`; }
-      } catch (error) { console.error("Initialization failed:", error); document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module: ${error}</div>`; }
+        } catch (e) {
+          console.error("Initial load error:", e);
+          document.body.innerHTML = `<div class="error">Failed to initialize: ${e}</div>`;
+        }
+      } catch (error) {
+        console.error("Initialization failed:", error);
+        document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module: ${error}</div>`;
+      }
     }
 
     document.addEventListener("DOMContentLoaded", run);

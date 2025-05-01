@@ -192,7 +192,7 @@ button:hover {
   border-radius: var(--border-radius);
   box-shadow: 0 1px 3px var(--info-shadow);
   font-family: var(--monospace-font);
-  font-size: 0.75rem;
+  font-size: 0.55rem;
   z-index: 110;
   white-space: nowrap;
   color: var(--text-color);
@@ -321,7 +321,7 @@ button:hover {
   border-bottom: 1px solid var(--item-border);
   border-radius: 0;
   font-family: var(--monospace-font);
-  font-size: 0.875rem;
+  font-size: 1.0rem;
   box-sizing: border-box;
   overflow: hidden;
   will-change: transform;
@@ -369,7 +369,7 @@ footer {
   padding: 0 20px;
   background-color: var(--footer-bg);
   color: var(--subtle-text-color);
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   border-top: 1px solid var(--footer-border);
   height: 40px;
   z-index: 100;
@@ -421,6 +421,10 @@ footer a:hover {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --panel-width: 17px;
+  }
+
   header {
     padding: 11px 15px;
     height: auto;
@@ -452,7 +456,7 @@ footer a:hover {
     bottom: 50px !important;
     left: 5px !important;
     z-index: 200;
-    font-size: 0.6875rem;
+    font-size: 0.4rem;
   }
 
   #viewport {
@@ -468,18 +472,18 @@ footer a:hover {
   .fibonacci-item {
     left: 10px;
     right: 10px;
-    font-size: 0.8125rem;
+    font-size: 0.8rem;
     padding: 4px 8px;
   }
 
   .fibonacci-item .index {
-    font-size: 0.6875rem;
+    font-size: 0.65rem;
     min-width: 60px;
-    padding-right: 10px;
+    padding-right: 3px;
   }
 
   footer {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     padding: 0 10px;
   }
 
@@ -489,6 +493,10 @@ footer a:hover {
 }
 
 @media (max-width: 480px) {
+  :root {
+    --panel-width: 14px;
+  }
+
   header {
     padding: 16px 15px;
     height: auto;
@@ -513,16 +521,16 @@ footer a:hover {
   #current-info {
     left: calc(var(--panel-width) + 10px) !important;
     right: auto;
-    font-size: 0.625rem;
+    font-size: 0.36rem;
   }
 
   .fibonacci-item {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
   }
 
   .fibonacci-item .index {
-    font-size: 0.625rem;
+    font-size: 0.55rem;
     min-width: 50px;
-    padding-right: 5px;
+    padding-right: 2px;
   }
 }
