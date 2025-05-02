@@ -15,7 +15,7 @@
 }
 
 :root {
-  --bg-color: #f4fafa;
+  --bg-color: #ebf4fa;
   --text-color: #2a3f4f;
   --header-bg: #ffffff;
   --header-shadow: rgba(42, 63, 79, 0.07);
@@ -24,16 +24,16 @@
   --subtle-text-color: #6a7f8f;
   --link-color: #008080;
   --link-hover-color: #006060;
-  --button-bg: #008080;
-  --button-text: #ffffff;
+  --button-text: #008080;
+  --button-bg: #ebf4fa;
   --button-border: 1px solid #008080;
-  --button-hover-bg: #006060;
+  --button-hover-bg: #12a4a430;
   --button-hover-border: 1px solid #006060;
   --input-border: #b0c0c0;
   --input-bg: #ffffff;
   --input-focus-border: #008080;
   --item-bg: transparent;
-  --item-hover-bg: #eafafa;
+  --item-hover-bg: #2a979729;
   --item-border: #d8eeee;
   --item-index-color: #6a7f8f;
   --item-value-color: #2a3f4f;
@@ -55,7 +55,7 @@
     "Liberation Mono", Menlo, Courier, monospace;
 
   --item-height: 30px;
-  --border-radius: 4px;
+  --border-radius: 8px;
   --panel-width: 20px;
 }
 
@@ -170,7 +170,7 @@ button {
   background-color: var(--button-bg);
   color: var(--button-text);
   border: var(--button-border);
-  border-radius: var(--border-radius);
+  border-radius: 0px;
   cursor: pointer;
   font-size: 1rem;
   font-family: var(--sans-serif-font);
@@ -251,7 +251,6 @@ button:hover {
 .panel-btn:first-child {
   border-top-left-radius: 0px;
   border-top-right-radius: 0px;
-  border-bottom: none;
 }
 
 .panel-btn:last-child {
@@ -269,15 +268,16 @@ button:hover {
   overflow-y: scroll;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: scrollbar;
   position: relative;
   touch-action: auto;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   overscroll-behavior: none;
 }
 
 #scrollableDiv::-webkit-scrollbar {
-  width: 10px;
+  width: 16px;
 }
 
 #scrollableDiv::-webkit-scrollbar-thumb {
@@ -425,6 +425,18 @@ footer a:hover {
     --panel-width: 17px;
   }
 
+  #scrollableDiv::-webkit-scrollbar {
+    width: 20px;
+  }
+  #scrollableDiv::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  #scrollableDiv::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--scrollbar-track);
+  }
+
   header {
     padding: 11px 15px;
     height: auto;
@@ -477,7 +489,7 @@ footer a:hover {
   }
 
   .fibonacci-item .index {
-    font-size: 0.65rem;
+    font-size: 0.63rem;
     min-width: 60px;
     padding-right: 3px;
   }
@@ -497,6 +509,18 @@ footer a:hover {
     --panel-width: 14px;
   }
 
+  #scrollableDiv::-webkit-scrollbar {
+    width: 18px;
+  }
+  #scrollableDiv::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  #scrollableDiv::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--scrollbar-track);
+  }
+  
   header {
     padding: 16px 15px;
     height: auto;
@@ -507,7 +531,7 @@ footer a:hover {
   }
 
   header p {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   button {
@@ -529,7 +553,7 @@ footer a:hover {
   }
 
   .fibonacci-item .index {
-    font-size: 0.55rem;
+    font-size: 0.53rem;
     min-width: 50px;
     padding-right: 2px;
   }
